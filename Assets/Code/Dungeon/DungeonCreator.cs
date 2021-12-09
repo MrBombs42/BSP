@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using BSP.Assets.Code.BSP;
 using BSP.Assets.Code.BSP.SpaceParticion;
 using UnityEngine;
@@ -9,8 +10,11 @@ namespace BSP.Assets.Code.Dungeon
         [Range (1, 400), SerializeField] private int _widthRange;
         [Range (0, 10), SerializeField] private int _splitQuantity = 4;
         [SerializeField] private bool _discartDungeonByMinRatio = true;
-        [SerializeField] private float _minWidthRation = 0.45f;
-        [SerializeField] private float _minHeightRation = 0.45f;
+        [SerializeField] private float _minWidthContainerRation = 0.15f;
+        [SerializeField] private float _minHeightContainerRation = 0.15f;
+
+        [SerializeField] private float _minWidthRoomRation = 0.15f;
+        [SerializeField] private float _minHeightRoomRation = 0.15f;
 
         private ITree<SpaceParticionData> _bspTree;
 
@@ -26,6 +30,12 @@ namespace BSP.Assets.Code.Dungeon
             var root = _bspTree.CreateNode(null, rootData, "Root");
             _bspTree.SetRoot(root);
             root = Split(_splitQuantity, root);
+            List<INode<SpaceParticionData>> leafs = new List<INode<SpaceParticionData>>();
+            _bspTree.GetLeafs(ref leafs, root);
+            foreach (var leaf in leafs)
+            {
+                leaf.Data.Room = GenerateRoom(leaf.Data.Container, leaf.Parent.Data.SplitDirection);
+            }
         }
 
         public void PrintLog(){
@@ -41,12 +51,8 @@ namespace BSP.Assets.Code.Dungeon
 
             var splitedNode = SplitNode(root, numOfOperations);
 
-            Debug.Log(numOfOperations);
             root.Left = Split(numOfOperations - 1, splitedNode.Item1);
-
-            Debug.Log(numOfOperations);
-            root.Right = Split(numOfOperations - 1, splitedNode.Item2);
-            
+            root.Right = Split(numOfOperations - 1, splitedNode.Item2);            
 
             return root;
         }
@@ -70,23 +76,17 @@ namespace BSP.Assets.Code.Dungeon
             if(splitDirection == SplitDirection.Vertical){
                 leftContainer = new RectInt(nodeContainer.x, nodeContainer.y, 
                     (int)(nodeContainer.width * UnityEngine.Random.Range(0.3f, 0.6f)), 
-                    nodeContainer.height);
-
-                if(treeLevel == 1){
-                    leftRoom = GenerateRoom(leftContainer);
-                }             
+                    nodeContainer.height);         
                
                 rightContainer = new RectInt(nodeContainer.x + leftContainer.width, 
                     nodeContainer.y, nodeContainer.width - leftContainer.width, 
                     nodeContainer.height);
 
-                if(treeLevel == 1){
-                    rightRoom = GenerateRoom(rightContainer);
-                }
                 if(_discartDungeonByMinRatio){
                     var leftRatio = leftContainer.width / leftContainer.height;
                     var rightRatio = rightContainer.width / rightContainer.height;
-                    if(leftRatio < _minWidthRation || rightRatio < _minWidthRation){
+                    if(leftRatio < _minWidthContainerRation || rightRatio < _minWidthContainerRation){
+                        UnityEngine.Debug.LogError($"Discart ratio {leftRatio}, {rightRatio}");
                         return SplitNode(node, treeLevel);
                     }
                 }
@@ -99,22 +99,16 @@ namespace BSP.Assets.Code.Dungeon
                 leftContainer = new RectInt(nodeContainer.x, nodeContainer.y, 
                     nodeContainer.width, 
                     (int)(nodeContainer.height * UnityEngine.Random.Range(0.3f, 0.6f)));
-
-                if(treeLevel == 1){
-                    leftRoom = GenerateRoom(leftContainer);
-                }
                            
                 rightContainer = new RectInt(nodeContainer.x, 
                     nodeContainer.y + leftContainer.height, nodeContainer.width, 
                     nodeContainer.height - leftContainer.height);
-                if(treeLevel == 1){
-                    rightRoom = GenerateRoom(rightContainer);
-                }
 
                 if(_discartDungeonByMinRatio){
                     var leftRatio = leftContainer.width / leftContainer.height;
                     var rightRatio = rightContainer.width / rightContainer.height;
-                    if(leftRatio < _minHeightRation || rightRatio < _minHeightRation){
+                    if(leftRatio < _minHeightContainerRation || rightRatio < _minHeightContainerRation){
+                        UnityEngine.Debug.LogError($"Discart ratio {leftRatio}, {rightRatio}");
                         return SplitNode(node, treeLevel);
                     }
                 }               
@@ -136,11 +130,24 @@ namespace BSP.Assets.Code.Dungeon
                 };
         }
 
-        private RectInt GenerateRoom(RectInt container){
-            var x = container.x + UnityEngine.Random.Range(0, container.xMax/2);
-            var y = container.y + UnityEngine.Random.Range(0, container.yMax/2);
-            var width = UnityEngine.Random.Range((container.xMax-x)/4, container.xMax-x);
-            var height = UnityEngine.Random.Range((container.yMax-y)/4, container.yMax-y);
+        private RectInt GenerateRoom(RectInt container, SplitDirection splitDirection){
+
+            var x = container.x + Mathf.FloorToInt(UnityEngine.Random.Range(0, container.width/3));
+            var y = container.y + Mathf.FloorToInt(UnityEngine.Random.Range(0, container.height/3));
+            var width = container.width - (x - container.x);
+            var height = container.height - (y - container.y);
+            width -= UnityEngine.Random.Range(0, width/3);
+            height -= UnityEngine.Random.Range(0, height/3);
+            var ratio = width / height;
+            // if(splitDirection == SplitDirection.Horizontal){
+            //     if(ratio < _minHeightRoomRation){
+            //         return GenerateRoom(container, splitDirection);
+            //     }
+            // }else{
+            //     if(ratio < _minWidthRoomRation){
+            //         return GenerateRoom(container, splitDirection);
+            //     }
+            // }
 
             return new RectInt(x, y, width, height);                 
         }
@@ -151,8 +158,9 @@ namespace BSP.Assets.Code.Dungeon
             Gizmos.color = Color.green;
 
             DrawRectInt(nodeContainter);
-            Gizmos.color = Color.red;                
-            DrawRectInt(nodeRoom);
+            Gizmos.color = Color.red;        
+            Gizmos.DrawCube(new Vector3(nodeRoom.center.x, nodeRoom.center.y, 0), new Vector3(nodeRoom.size.x, nodeRoom.size.y, 0));    
+            //DrawRectInt(nodeRoom);
 
             if(node.Left != null){
                 DebugDrawBspTree(node.Left);

@@ -7,14 +7,11 @@ namespace BSP.Assets.Code.BSP
     public class Tree<T> : ITree<T>
     {
         public INode<T> Root => _root;
-        public List<INode<T>> Leafs => _leafs;
 
         private INode<T> _root;
-        private List<INode<T>> _leafs;
 
         public Tree(){
             _root = null;
-            _leafs = new List<INode<T>>();
         }
 
         public void SetRoot(INode<T> root){
@@ -23,12 +20,18 @@ namespace BSP.Assets.Code.BSP
 
         public virtual INode<T> CreateNode(INode<T> parent, T data, string id){
             var node = new Node<T>(parent, data, id);
-            InsertLeaf(node);
             return node;
         }
 
-        protected void InsertLeaf(INode<T> node){
-            _leafs.Insert(_leafs.Count ,node);
+
+        public void GetLeafs(ref List<INode<T>> leafList, INode<T> root){
+            if(root.Left == null && root.Right == null){
+                leafList.Add(root);
+                return;
+            }
+
+            GetLeafs(ref leafList, root.Left);
+            GetLeafs(ref leafList, root.Right);
         }
 
         public INode<T> Search(INode<T> node, float height)
@@ -57,7 +60,7 @@ namespace BSP.Assets.Code.BSP
 
         private INode<T> InsertRec(INode<T> node, INode<T> parent, T data, float height){
             if(node == null){
-                node = CreateNode(parent, data, _leafs.Count.ToString());
+                node = CreateNode(parent, data, "");
                 return node;
             }
 
