@@ -734,6 +734,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _widthRange: 10
   _splitQuantity: 1
+  _discartDungeonByMinRatio: 1
+  _minWidthRation: 0.45
+  _minHeightRation: 0.45
 --- !u!4 &934343528
 Transform:
   m_ObjectHideFlags: 0

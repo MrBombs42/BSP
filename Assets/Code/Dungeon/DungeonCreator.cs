@@ -8,6 +8,9 @@ namespace BSP.Assets.Code.Dungeon
     public class DungeonCreator : MonoBehaviour {
         [Range (1, 400), SerializeField] private int _widthRange;
         [Range (0, 10), SerializeField] private int _splitQuantity = 4;
+        [SerializeField] private bool _discartDungeonByMinRatio = true;
+        [SerializeField] private float _minWidthRation = 0.45f;
+        [SerializeField] private float _minHeightRation = 0.45f;
 
         private ITree<SpaceParticionData> _bspTree;
 
@@ -36,7 +39,7 @@ namespace BSP.Assets.Code.Dungeon
                 return root;
             }
 
-            var splitedNode = SplitNode(root);
+            var splitedNode = SplitNode(root, numOfOperations);
 
             Debug.Log(numOfOperations);
             root.Left = Split(numOfOperations - 1, splitedNode.Item1);
@@ -48,7 +51,7 @@ namespace BSP.Assets.Code.Dungeon
             return root;
         }
 
-        private (INode<SpaceParticionData>, INode<SpaceParticionData>) SplitNode(INode<SpaceParticionData> node)
+        private (INode<SpaceParticionData>, INode<SpaceParticionData>) SplitNode(INode<SpaceParticionData> node, int treeLevel)
         {
             var splitDirection = UnityEngine.Random.Range(0f, 1f) > 0.5f ? SplitDirection.Horizontal : SplitDirection.Vertical;
             var nodeContainer = node.Data.Container;
@@ -56,45 +59,72 @@ namespace BSP.Assets.Code.Dungeon
             INode<SpaceParticionData> leftNode;
             INode<SpaceParticionData> rightNode;
             SpaceParticionData leftData;
-            SpaceParticionData rightData;
-            node.Data.SplitDirection = splitDirection;
+            SpaceParticionData rightData;           
             RectInt leftContainer;
-            RectInt leftRoom;
+            RectInt leftRoom = new RectInt();
             RectInt rightContainer;
-            RectInt rightRoom;
+            RectInt rightRoom = new RectInt();
+
+            node.Data.SplitDirection = splitDirection;
+
             if(splitDirection == SplitDirection.Vertical){
                 leftContainer = new RectInt(nodeContainer.x, nodeContainer.y, 
                     (int)(nodeContainer.width * UnityEngine.Random.Range(0.3f, 0.6f)), 
                     nodeContainer.height);
-                leftRoom = GenerateRoom(leftContainer);
-                leftData = CreateSpaceParticionData(leftContainer, leftRoom);
 
-                rightContainer = new RectInt(nodeContainer.x + leftData.Container.width, 
-                    nodeContainer.y, nodeContainer.width - leftData.Container.width, 
+                if(treeLevel == 1){
+                    leftRoom = GenerateRoom(leftContainer);
+                }             
+               
+                rightContainer = new RectInt(nodeContainer.x + leftContainer.width, 
+                    nodeContainer.y, nodeContainer.width - leftContainer.width, 
                     nodeContainer.height);
-                rightRoom = GenerateRoom(rightContainer);
- 
+
+                if(treeLevel == 1){
+                    rightRoom = GenerateRoom(rightContainer);
+                }
+                if(_discartDungeonByMinRatio){
+                    var leftRatio = leftContainer.width / leftContainer.height;
+                    var rightRatio = rightContainer.width / rightContainer.height;
+                    if(leftRatio < _minWidthRation || rightRatio < _minWidthRation){
+                        return SplitNode(node, treeLevel);
+                    }
+                }
+                               
+                leftData = CreateSpaceParticionData(leftContainer, leftRoom);
                 rightData = CreateSpaceParticionData(rightContainer, rightRoom);
             }
             else
             {
-
                 leftContainer = new RectInt(nodeContainer.x, nodeContainer.y, 
                     nodeContainer.width, 
                     (int)(nodeContainer.height * UnityEngine.Random.Range(0.3f, 0.6f)));
-                leftRoom = GenerateRoom(leftContainer);
-                leftData = CreateSpaceParticionData(leftContainer, leftRoom);
 
+                if(treeLevel == 1){
+                    leftRoom = GenerateRoom(leftContainer);
+                }
+                           
                 rightContainer = new RectInt(nodeContainer.x, 
-                    nodeContainer.y + leftData.Container.height, nodeContainer.width, 
-                    nodeContainer.height - leftData.Container.height);
-                rightRoom = GenerateRoom(rightContainer);
- 
+                    nodeContainer.y + leftContainer.height, nodeContainer.width, 
+                    nodeContainer.height - leftContainer.height);
+                if(treeLevel == 1){
+                    rightRoom = GenerateRoom(rightContainer);
+                }
+
+                if(_discartDungeonByMinRatio){
+                    var leftRatio = leftContainer.width / leftContainer.height;
+                    var rightRatio = rightContainer.width / rightContainer.height;
+                    if(leftRatio < _minHeightRation || rightRatio < _minHeightRation){
+                        return SplitNode(node, treeLevel);
+                    }
+                }               
+
+                leftData = CreateSpaceParticionData(leftContainer, leftRoom);
                 rightData = CreateSpaceParticionData(rightContainer, rightRoom);                
             }
 
-            leftNode = _bspTree.CreateNode(node, leftData, node.Id.Insert(node.Id.Length, "_left"));
-            rightNode = _bspTree.CreateNode(node, rightData, node.Id.Insert(node.Id.Length, "_right"));
+            leftNode = _bspTree.CreateNode(node, leftData, $"_left {treeLevel}");
+            rightNode = _bspTree.CreateNode(node, rightData, $"_right {treeLevel}");
 
             return (leftNode, rightNode);
         }
@@ -121,7 +151,7 @@ namespace BSP.Assets.Code.Dungeon
             Gizmos.color = Color.green;
 
             DrawRectInt(nodeContainter);
-            Gizmos.color = Color.red;    
+            Gizmos.color = Color.red;                
             DrawRectInt(nodeRoom);
 
             if(node.Left != null){
