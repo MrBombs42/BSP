@@ -7,6 +7,7 @@ namespace BSP.Assets.Code.BSP
     {
         INode<T> Root {get;}
         void GetLeafs(ref List<INode<T>> leafList, INode<T> root);
+        void GetLeafsParent(ref HashSet<INode<T>> leafList, INode<T> root);
         INode<T> CreateNode(INode<T> parent, T data, string id);
         INode<T> Search(INode<T> node, float height);
         void SetRoot(INode<T> root);

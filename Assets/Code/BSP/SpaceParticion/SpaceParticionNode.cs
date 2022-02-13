@@ -26,7 +26,7 @@ namespace BSP.Assets.Code.BSP.SpaceParticion
 
         public override string ToString()
         {
-            return $"Container: {Container}, Room: {Room}, SplitDirection: {SplitDirection}";
+            return $"Container: {Container}, Room: {Room}, SplitDirection: {SplitDirection}, Ratio {Container.width/Container.height}";
         }
     }
 

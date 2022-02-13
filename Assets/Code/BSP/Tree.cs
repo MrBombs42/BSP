@@ -24,6 +24,11 @@ namespace BSP.Assets.Code.BSP
         }
 
 
+        /// <summary>
+        /// Get nodes with no childrens
+        /// </summary>
+        /// <param name="leafList"></param>
+        /// <param name="root"></param>
         public void GetLeafs(ref List<INode<T>> leafList, INode<T> root){
             if(root.Left == null && root.Right == null){
                 leafList.Add(root);
@@ -32,6 +37,16 @@ namespace BSP.Assets.Code.BSP
 
             GetLeafs(ref leafList, root.Left);
             GetLeafs(ref leafList, root.Right);
+        }
+
+         public void GetLeafsParent(ref HashSet<INode<T>> leafParentList, INode<T> root){
+            if(root.Left == null && root.Right == null){
+                leafParentList.Add(root.Parent);
+                return;
+            }
+
+            GetLeafsParent(ref leafParentList, root.Left);
+            GetLeafsParent(ref leafParentList, root.Right);
         }
 
         public INode<T> Search(INode<T> node, float height)
