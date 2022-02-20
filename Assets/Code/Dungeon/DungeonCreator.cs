@@ -200,7 +200,7 @@ namespace BSP.Assets.Code.Dungeon
                 var rnd = UnityEngine.Random.Range(leftRegion.xMin + halfHallSize, leftRegion.xMax - halfHallSize);
                 if(rnd < rightRegion.xMin || rnd > rightRegion.xMax)
                 {
-                    var opositeRnd = UnityEngine.Random.Range(rightRegion.yMin, rightRegion.yMax);
+                    var opositeRnd = UnityEngine.Random.Range(rightRegion.yMin + halfHallSize, rightRegion.yMax - halfHallSize);
                     if (rnd < rightRegion.xMin)
                     {
                         Debug.Log("XMin");
@@ -225,21 +225,21 @@ namespace BSP.Assets.Code.Dungeon
             else
             {
                 Debug.Log("Vertical");
-                var rnd = UnityEngine.Random.Range(rightRegion.yMin + _hallSize, rightRegion.yMax - _hallSize);
+                var rnd = UnityEngine.Random.Range(leftRegion.yMin + halfHallSize, leftRegion.yMax - halfHallSize);
                 if (rnd < rightRegion.yMin || rnd > rightRegion.yMax)
                 {
-                    var opositeRnd = UnityEngine.Random.Range(rightRegion.xMin, rightRegion.xMax);
+                    var opositeRnd = UnityEngine.Random.Range(rightRegion.xMin + halfHallSize, rightRegion.xMax - halfHallSize);
                     if (rnd < rightRegion.yMin)
                     {
                         Debug.Log("yMin");
                         halls.Add(new RectInt(leftRegion.xMax, rnd, Math.Abs(opositeRnd - leftRegion.xMax), _hallSize));
-                        halls.Add(new RectInt(opositeRnd, rightRegion.yMin, _hallSize, Math.Abs(rnd - rightRegion.yMax)));
+                        halls.Add(new RectInt(opositeRnd, rnd, _hallSize, Math.Abs(rnd - rightRegion.yMin)));
                     }
                     else
                     {
                         Debug.Log("yMax");
                         halls.Add(new RectInt(leftRegion.xMax, rnd, Math.Abs(opositeRnd - leftRegion.xMax), _hallSize));
-                        halls.Add(new RectInt(opositeRnd, rightRegion.yMax, _hallSize, -Math.Abs(rnd - rightRegion.yMax)));
+                        halls.Add(new RectInt(opositeRnd, rnd, _hallSize, -Math.Abs(rnd - rightRegion.yMax)));
                     }
                 }
                 else

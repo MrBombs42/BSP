@@ -733,7 +733,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _widthRange: 400
-  _splitQuantity: 4
+  _splitQuantity: 5
   _discartDungeonByMinRatio: 1
   _minWidthContainerRation: 0.15
   _minHeightContainerRation: 0.15
