@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using BSP.Assets.Code.BSP;
@@ -6,7 +7,7 @@ using BSP.Assets.Code.BSP.SpaceParticion;
 using UnityEngine;
 
 namespace BSP.Assets.Code.Dungeon
-{    
+{
     public class DungeonCreator : MonoBehaviour {
         [Range (1, 400), SerializeField] private int _widthRange;
         [Range (0, 10), SerializeField] private int _splitQuantity = 4;
@@ -16,6 +17,8 @@ namespace BSP.Assets.Code.Dungeon
 
         [SerializeField] private float _minWidthRoomRation = 0.15f;
         [SerializeField] private float _minHeightRoomRation = 0.15f;
+        [SerializeField] private int _hallSize = 1;
+        [SerializeField] private float _debugStepTimeInSeconds = 1;
 
         private const float MinRandomSplitValue = 0.45f;
         private const float MaxRandomSplitValue = 0.55f;
@@ -28,9 +31,11 @@ namespace BSP.Assets.Code.Dungeon
             _bspTree = new SpaceParticionTree();
         }
 
-        public void GenerateDungeon(){
-            var rootData = new SpaceParticionData(){
-                Container = new RectInt(0,0, _widthRange, _widthRange)
+        public void GenerateDungeon()
+        {
+            var rootData = new SpaceParticionData()
+            {
+                Container = new RectInt(0, 0, _widthRange, _widthRange)
             };
 
             _halls = new List<RectInt>();
@@ -47,19 +52,25 @@ namespace BSP.Assets.Code.Dungeon
             HashSet<INode<SpaceParticionData>> leafParents = new HashSet<INode<SpaceParticionData>>();
             _bspTree.GetLeafsParent(ref leafParents, root);
 
+            StartCoroutine(WaitAndGenerateHall(leafParents));
+
+        }
+
+        private IEnumerator WaitAndGenerateHall(HashSet<INode<SpaceParticionData>> leafParents)
+        {
             foreach (var leafParent in leafParents)
             {
-                CreateHall(ref _halls, leafParent.Left.Data.Room, leafParent.Right.Data.Room);
+               CreateHall(ref _halls, leafParent.Left.Data.Room, leafParent.Right.Data.Room, leafParent.Data.SplitDirection);
+                yield return new WaitForSeconds(_debugStepTimeInSeconds);
             }
-            
+
             var leafParentList = leafParents.ToList();
-
-            for(int i = 0; i < leafParentList.Count-1; i+=2){
-                CreateHall(ref _halls, leafParentList[i].Data.Container, leafParentList[i+1].Data.Container);
-            }
-
-
-
+            //UnityEngine.Debug.LogError("last hall");
+            //for (int i = 0; i < leafParentList.Count - 1; i += 2)
+            //{
+            //    CreateHall(ref _halls, leafParentList[i].Data.Container, leafParentList[i + 1].Data.Container);
+            //    yield return new WaitForSeconds(1);
+            //}
         }
 
         public void PrintLog(){
@@ -68,7 +79,7 @@ namespace BSP.Assets.Code.Dungeon
 
 
         private INode<SpaceParticionData> Split(int numOfOperations, INode<SpaceParticionData> root)
-        {          
+        {
             if(numOfOperations == 0){
                 return root;
             }
@@ -76,7 +87,7 @@ namespace BSP.Assets.Code.Dungeon
             var splitedNode = SplitNode(root, numOfOperations);
 
             root.Left = Split(numOfOperations - 1, splitedNode.Item1);
-            root.Right = Split(numOfOperations - 1, splitedNode.Item2);            
+            root.Right = Split(numOfOperations - 1, splitedNode.Item2);
 
             return root;
         }
@@ -89,7 +100,7 @@ namespace BSP.Assets.Code.Dungeon
             INode<SpaceParticionData> leftNode;
             INode<SpaceParticionData> rightNode;
             SpaceParticionData leftData;
-            SpaceParticionData rightData;           
+            SpaceParticionData rightData;
             RectInt leftContainer;
             RectInt leftRoom = new RectInt();
             RectInt rightContainer;
@@ -98,12 +109,12 @@ namespace BSP.Assets.Code.Dungeon
             node.Data.SplitDirection = splitDirection;
 
             if(splitDirection == SplitDirection.Vertical){
-                leftContainer = new RectInt(nodeContainer.x, nodeContainer.y, 
-                    (int)(nodeContainer.width * UnityEngine.Random.Range(MinRandomSplitValue, MaxRandomSplitValue)), 
-                    nodeContainer.height);         
-               
-                rightContainer = new RectInt(nodeContainer.x + leftContainer.width, 
-                    nodeContainer.y, nodeContainer.width - leftContainer.width, 
+                leftContainer = new RectInt(nodeContainer.x, nodeContainer.y,
+                    (int)(nodeContainer.width * UnityEngine.Random.Range(MinRandomSplitValue, MaxRandomSplitValue)),
+                    nodeContainer.height);
+
+                rightContainer = new RectInt(nodeContainer.x + leftContainer.width,
+                    nodeContainer.y, nodeContainer.width - leftContainer.width,
                     nodeContainer.height);
 
                 if(_discartDungeonByMinRatio){
@@ -115,18 +126,18 @@ namespace BSP.Assets.Code.Dungeon
                         return SplitNode(node, treeLevel);
                     }
                 }
-                               
+
                 leftData = CreateSpaceParticionData(leftContainer, leftRoom);
                 rightData = CreateSpaceParticionData(rightContainer, rightRoom);
             }
             else
             {
-                leftContainer = new RectInt(nodeContainer.x, nodeContainer.y, 
-                    nodeContainer.width, 
+                leftContainer = new RectInt(nodeContainer.x, nodeContainer.y,
+                    nodeContainer.width,
                     (int)(nodeContainer.height * UnityEngine.Random.Range(MinRandomSplitValue, MaxRandomSplitValue)));
-                           
-                rightContainer = new RectInt(nodeContainer.x, 
-                    nodeContainer.y + leftContainer.height, nodeContainer.width, 
+
+                rightContainer = new RectInt(nodeContainer.x,
+                    nodeContainer.y + leftContainer.height, nodeContainer.width,
                     nodeContainer.height - leftContainer.height);
 
                 if(_discartDungeonByMinRatio){
@@ -137,10 +148,10 @@ namespace BSP.Assets.Code.Dungeon
                         //UnityEngine.Debug.LogError($"Discart ratio {leftRatio}, {rightRatio}");
                         return SplitNode(node, treeLevel);
                     }
-                }               
+                }
 
                 leftData = CreateSpaceParticionData(leftContainer, leftRoom);
-                rightData = CreateSpaceParticionData(rightContainer, rightRoom);                
+                rightData = CreateSpaceParticionData(rightContainer, rightRoom);
             }
 
             leftNode = _bspTree.CreateNode(node, leftData, $"_left {treeLevel}");
@@ -150,7 +161,7 @@ namespace BSP.Assets.Code.Dungeon
         }
 
         private SpaceParticionData CreateSpaceParticionData(RectInt container, RectInt room){
-            return new SpaceParticionData{                     
+            return new SpaceParticionData{
                     Container = container,
                     Room = room
                 };
@@ -176,98 +187,66 @@ namespace BSP.Assets.Code.Dungeon
             //     }
             // }
 
-            return new RectInt(x, y, width, height);                 
+            return new RectInt(x, y, width, height);
         }
 
-        public void CreateHall(ref List<RectInt> halls, RectInt leftRegion, RectInt rightRegion)
-        {        
-            var point1 = new Vector2Int(UnityEngine.Random.Range(leftRegion.xMin + 1, leftRegion.xMax - 2),
-                                     UnityEngine.Random.Range(leftRegion.yMin + 1, leftRegion.yMax - 2));
-
-            var point2 = new Vector2Int(UnityEngine.Random.Range(rightRegion.xMin + 1, rightRegion.xMax - 2),
-                                     UnityEngine.Random.Range(rightRegion.yMin + 1, rightRegion.yMax - 2));
-
-
-
-            var w = point2.x - point1.x;
-            var h = point2.y - point1.y;
-
-           
-            if (w < 0)
+        public void CreateHall(ref List<RectInt> halls, RectInt leftRegion, RectInt rightRegion, SplitDirection splitDirection)
+        {
+            //desenhar q fica mais facil
+            var halfHallSize = _hallSize / 2;
+            if (splitDirection == SplitDirection.Horizontal)
             {
-                if (h < 0)
+                Debug.Log("Horizontal");
+                var rnd = UnityEngine.Random.Range(leftRegion.xMin + halfHallSize, leftRegion.xMax - halfHallSize);
+                if(rnd < rightRegion.xMin || rnd > rightRegion.xMax)
                 {
-                    if ( UnityEngine.Random.Range(0f, 1f) < 0.5)
+                    var opositeRnd = UnityEngine.Random.Range(rightRegion.yMin, rightRegion.yMax);
+                    if (rnd < rightRegion.xMin)
                     {
-                        halls.Add(new RectInt(point2.x, point1.y, Math.Abs(w), 1));
-                        halls.Add(new RectInt(point2.x, point2.y, 1, Math.Abs(h)));
+                        Debug.Log("XMin");
+
+                        halls.Add(new RectInt(rnd, leftRegion.yMax, _hallSize, Math.Abs(opositeRnd - leftRegion.yMax)));
+                        halls.Add(new RectInt(rightRegion.xMin, opositeRnd, -Math.Abs(rnd - rightRegion.xMin), _hallSize));
                     }
                     else
                     {
-                        halls.Add(new RectInt(point2.x, point2.y, Math.Abs(w), 1));
-                        halls.Add(new RectInt(point1.x, point2.y, 1, Math.Abs(h)));
+                        Debug.Log("XMax");
+                        halls.Add(new RectInt(rnd, leftRegion.yMax, _hallSize, Math.Abs(opositeRnd - leftRegion.yMax)));
+                        halls.Add(new RectInt(rightRegion.xMax, opositeRnd, Math.Abs(rnd - rightRegion.xMax) + _hallSize, _hallSize));
                     }
                 }
-                else if (h > 0)
+                else
                 {
-                    if ( UnityEngine.Random.Range(0f, 1f) < 0.5)
-                    {
-                        halls.Add(new RectInt(point2.x, point1.y, Math.Abs(w), 1));
-                        halls.Add(new RectInt(point2.x, point1.y, 1, Math.Abs(h)));
-                    }
-                    else
-                    {
-                        halls.Add(new RectInt(point2.x, point2.y, Math.Abs(w), 1));
-                        halls.Add(new RectInt(point1.x, point1.y, 1, Math.Abs(h)));
-                    }
-                }
-                else // if (h == 0)
-                {
-                    halls.Add(new RectInt(point2.x, point2.y, Math.Abs(w), 1));
+                    Debug.Log("Reto");
+                    var h = Math.Abs(rightRegion.yMin - leftRegion.yMax);
+                    halls.Add(new RectInt(rnd, leftRegion.yMax, _hallSize, h));
                 }
             }
-            else if (w > 0)
+            else
             {
-                if (h < 0)
+                Debug.Log("Vertical");
+                var rnd = UnityEngine.Random.Range(rightRegion.yMin + _hallSize, rightRegion.yMax - _hallSize);
+                if (rnd < rightRegion.yMin || rnd > rightRegion.yMax)
                 {
-                    if ( UnityEngine.Random.Range(0f, 1f) < 0.5)
+                    var opositeRnd = UnityEngine.Random.Range(rightRegion.xMin, rightRegion.xMax);
+                    if (rnd < rightRegion.yMin)
                     {
-                        halls.Add(new RectInt(point1.x, point2.y, Math.Abs(w), 1));
-                        halls.Add(new RectInt(point1.x, point2.y, 1, Math.Abs(h)));
+                        Debug.Log("yMin");
+                        halls.Add(new RectInt(leftRegion.xMax, rnd, Math.Abs(opositeRnd - leftRegion.xMax), _hallSize));
+                        halls.Add(new RectInt(opositeRnd, rightRegion.yMin, _hallSize, Math.Abs(rnd - rightRegion.yMax)));
                     }
                     else
                     {
-                        halls.Add(new RectInt(point1.x, point1.y, Math.Abs(w), 1));
-                        halls.Add(new RectInt(point2.x, point2.y, 1, Math.Abs(h)));
+                        Debug.Log("yMax");
+                        halls.Add(new RectInt(leftRegion.xMax, rnd, Math.Abs(opositeRnd - leftRegion.xMax), _hallSize));
+                        halls.Add(new RectInt(opositeRnd, rightRegion.yMax, _hallSize, -Math.Abs(rnd - rightRegion.yMax)));
                     }
                 }
-                else if (h > 0)
+                else
                 {
-                    if ( UnityEngine.Random.Range(0f, 1f) < 0.5)
-                    {
-                        halls.Add(new RectInt(point1.x, point1.y, Math.Abs(w), 1));
-                        halls.Add(new RectInt(point2.x, point1.y, 1, Math.Abs(h)));
-                    }
-                    else
-                    {
-                        halls.Add(new RectInt(point1.x, point2.y, Math.Abs(w), 1));
-                        halls.Add(new RectInt(point1.x, point1.y, 1, Math.Abs(h)));
-                    }
-                }
-                else // if (h == 0)
-                {
-                    halls.Add(new RectInt(point1.x, point1.y, Math.Abs(w), 1));
-                }
-            }
-            else // if (w == 0)
-            {
-                if (h < 0)
-                {
-                    halls.Add(new RectInt(point2.x, point2.y, 1, Math.Abs(h)));
-                }
-                else if (h > 0)
-                {
-                    halls.Add(new RectInt(point1.x, point1.y, 1, Math.Abs(h)));
+                    Debug.Log("Reto");
+                    var w = Math.Abs(rightRegion.xMin - leftRegion.xMax);
+                    halls.Add(new RectInt(leftRegion.xMax, rnd, w, _hallSize));
                 }
             }
         }
@@ -289,12 +268,12 @@ namespace BSP.Assets.Code.Dungeon
         }
 
         private void DrawHall(RectInt hall){
-            Gizmos.color = Color.black;        
+            Gizmos.color = Color.black;
             Gizmos.DrawCube(new Vector3(hall.center.x, hall.center.y, 0), new Vector3(hall.size.x, hall.size.y, 0));
         }
 
         private void DrawRoom(RectInt nodeRoom){
-            Gizmos.color = Color.red;        
+            Gizmos.color = Color.red;
             Gizmos.DrawCube(new Vector3(nodeRoom.center.x, nodeRoom.center.y, 0), new Vector3(nodeRoom.size.x, nodeRoom.size.y, 0));
         }
 
@@ -321,9 +300,9 @@ namespace BSP.Assets.Code.Dungeon
                     DrawHall(hall);
                 }
             }
-            
+
         }
-        
-        
+
+
     }
 }

@@ -5,7 +5,7 @@ namespace BSP.Assets.Code.BSP.SpaceParticion
 {
     public enum SplitDirection{
         None = 0,
-        Horizontal, 
+        Horizontal,
         Vertical
     }
 

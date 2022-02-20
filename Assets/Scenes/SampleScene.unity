@@ -739,6 +739,8 @@ MonoBehaviour:
   _minHeightContainerRation: 0.15
   _minWidthRoomRation: 0.15
   _minHeightRoomRation: 0.15
+  _hallSize: 3
+  _debugStepTimeInSeconds: 1
 --- !u!4 &934343528
 Transform:
   m_ObjectHideFlags: 0
