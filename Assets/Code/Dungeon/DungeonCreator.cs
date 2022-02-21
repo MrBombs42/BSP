@@ -9,6 +9,13 @@ using UnityEngine;
 
 namespace BSP.Assets.Code.Dungeon
 {
+    public enum HallCreationHelper
+    {
+        LeftRoom = 0,
+        Hall,
+        RightRoom
+    }
+
     public class DungeonCreator : MonoBehaviour {
         [Range (1, 400), SerializeField] private int _widthRange;
         [Range (0, 10), SerializeField] private int _splitQuantity = 4;
@@ -50,26 +57,29 @@ namespace BSP.Assets.Code.Dungeon
 
             HashSet<INode<SpaceParticionData>> leafParents = new HashSet<INode<SpaceParticionData>>();
             _bspTree.GetLeafsParent(ref leafParents, root);
+            //_bspTree.GetNodesAtLevel(ref leafParents, root, _splitQuantity - 1);need be fixed
 
             StartCoroutine(WaitAndGenerateHall(leafParents));
-
         }
 
         private IEnumerator WaitAndGenerateHall(HashSet<INode<SpaceParticionData>> leafParents)
         {
             foreach (var leafParent in leafParents)
             {
-               CreateHall(leafParent.Left.Data , leafParent.Right.Data, leafParent.Data.SplitDirection);
+               CreateRoomHall(leafParent, leafParent.Left.Data , leafParent.Right.Data, leafParent.Data.SplitDirection);
                 yield return new WaitForSeconds(_debugStepTimeInSeconds);
             }
 
             var leafParentList = leafParents.ToList();
             ////UnityEngine.Debug.LogError("last hall");
-            //for (int i = 0; i < leafParentList.Count - 1; i += 2)
-            //{
-            //    CreateHall(ref _halls, leafParentList[i].Data.Container, leafParentList[i + 1].Data.Container, );
-            //    yield return new WaitForSeconds(1);
-            //}
+            for (int i = 0; i < leafParentList.Count - 1; i += 2)
+            {
+                CreateContainerHall(leafParentList[i].Parent,
+                    leafParentList[i], leafParentList[i + 1],
+                    leafParentList[i].Parent.Data.SplitDirection,
+                    HallCreationHelper.Hall);
+                yield return new WaitForSeconds(1);
+            }
         }
 
         public void PrintLog(){
@@ -189,10 +199,8 @@ namespace BSP.Assets.Code.Dungeon
             return new RectInt(x, y, width, height);
         }
 
-        public void CreateHall(SpaceParticionData leftNode, SpaceParticionData rightNode, SplitDirection splitDirection)
+        public void CreateRoomHall(INode<SpaceParticionData> parent, SpaceParticionData leftNode, SpaceParticionData rightNode, SplitDirection splitDirection)
         {
-            //desenhar q fica mais facil
-            var halfHallSize = _hallSize / 2;
             /*
             Esclher um room ou hall para iniciar
             Verificar se tem algo na direção do outro nodo
@@ -202,16 +210,48 @@ namespace BSP.Assets.Code.Dungeon
                     escolhe area aleaotia do outro nodo e faz o algoritmo da parede para gerar a curva
 
             */
+            var hall = CreateHall(leftNode.Room, rightNode.Room, splitDirection);
+            parent.Data.Hall = hall;
+        }
 
+        public void CreateContainerHall(INode<SpaceParticionData> parentNode, INode<SpaceParticionData> leftNode,
+            INode<SpaceParticionData> rightNode,
+            SplitDirection splitDirection,
+            HallCreationHelper hallStart)
+        {
+            //var rndStart = (HallCreationHelper)UnityEngine.Random.Range(0, 3);
+            Hall hall;
+            switch (hallStart)
+            {
+                case HallCreationHelper.LeftRoom:
+                    hall = new Hall();
+                    break;
+                case HallCreationHelper.Hall:
+                    hall = CreateHall(leftNode.Data.Hall.Halls[0], rightNode.Data.Hall.Halls[0], splitDirection);
+                    break;
+                case HallCreationHelper.RightRoom:
+                    hall = new Hall();
+                    break;
+                default:
+                    UnityEngine.Debug.LogError($"unknown hall Start {hallStart}");
+                    hall = new Hall();
+                    break;
+            }
 
-            var leftRegion = leftNode.Room;
-            var rightRegion = rightNode.Room;
+            parentNode.Data.Hall = hall;
+        }
+
+        public Hall CreateHall(RectInt leftRegion, RectInt rightRegion, SplitDirection splitDirection)
+        {
+            //desenhar q fica mais facil
+            var halfHallSize = _hallSize / 2;
+
             var hall = new Hall();
             if (splitDirection == SplitDirection.Horizontal)
             {
                 Debug.Log("Horizontal");
                 var rnd = UnityEngine.Random.Range(leftRegion.xMin + halfHallSize, leftRegion.xMax - halfHallSize);
-                if(rnd < rightRegion.xMin || rnd > rightRegion.xMax)
+                if (rnd < rightRegion.xMin || rnd > rightRegion.xMax)
                 {
                     var opositeRnd = UnityEngine.Random.Range(rightRegion.yMin + halfHallSize, rightRegion.yMax - halfHallSize);
                     if (rnd < rightRegion.xMin)
@@ -263,8 +303,7 @@ namespace BSP.Assets.Code.Dungeon
                 }
             }
 
-            leftNode.Hall = hall;
-            rightNode.Hall = hall;
+            return hall;
         }
 
         private void DebugDrawBspTree(INode<SpaceParticionData> node){

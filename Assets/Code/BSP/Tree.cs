@@ -39,7 +39,7 @@ namespace BSP.Assets.Code.BSP
             GetLeafs(ref leafList, root.Right);
         }
 
-         public void GetLeafsParent(ref HashSet<INode<T>> leafParentList, INode<T> root){
+        public void GetLeafsParent(ref HashSet<INode<T>> leafParentList, INode<T> root){
             if(root.Left == null && root.Right == null){
                 leafParentList.Add(root.Parent);
                 return;
@@ -47,6 +47,55 @@ namespace BSP.Assets.Code.BSP
 
             GetLeafsParent(ref leafParentList, root.Left);
             GetLeafsParent(ref leafParentList, root.Right);
+        }
+
+        public void GetNodesAtLevel(ref HashSet<INode<T>> nodesList, INode<T> root, int level)
+        {
+            int startLevel = level;
+            if (level == 0)
+            {
+                nodesList.Add(root);
+                return;
+            }
+
+            UnityEngine.Debug.LogError("a" + level);
+            GetLeftNodeAtLevel(ref nodesList, root.Left, --level);
+            UnityEngine.Debug.LogError("b" + startLevel);
+            GetRightNodeAtLevel(ref nodesList, root.Right, --startLevel);
+        }
+
+        private void GetLeftNodeAtLevel(ref HashSet<INode<T>> nodesList, INode<T> root, int level)
+        {
+            if (level == 0)
+            {
+                nodesList.Add(root);
+                return;
+            }
+
+            UnityEngine.Debug.LogError(level);
+            GetLeftNodeAtLevel(ref nodesList, root.Left, --level);
+        }
+
+        private void GetRightNodeAtLevel(ref HashSet<INode<T>> nodesList, INode<T> root, int level)
+        {
+            if (level == 0)
+            {
+                nodesList.Add(root);
+                return;
+            }
+
+            UnityEngine.Debug.LogError(level);
+            GetRightNodeAtLevel(ref nodesList, root.Right, --level);
+        }
+
+        public int GetTreeSize(INode<T> root)
+        {
+            if (root.Left == null && root.Right == null)
+            {
+                return 0;
+            }
+
+            return 1 + GetTreeSize(root.Left);
         }
 
         public INode<T> Search(INode<T> node, float height)
@@ -117,7 +166,7 @@ namespace BSP.Assets.Code.BSP
 
             // var stringBuilder = new StringBuilder();
             // var node = NavigateToRight(_root);
-            // while(node != null){                              
+            // while(node != null){
             //     node = NavigateToRight(node);
             //     var childRigth = node.Right != null ? node.Right.Id:"null";
             //     node = NavigateToLeft(node);
