@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Assets.Code.BSP.SpaceParticion;
 using BSP.Assets.Code.BSP;
 using BSP.Assets.Code.BSP.SpaceParticion;
 using UnityEngine;
@@ -24,7 +25,6 @@ namespace BSP.Assets.Code.Dungeon
         private const float MaxRandomSplitValue = 0.55f;
 
         private ITree<SpaceParticionData> _bspTree;
-        private List<RectInt> _halls;
 
         private void Awake()
         {
@@ -38,7 +38,6 @@ namespace BSP.Assets.Code.Dungeon
                 Container = new RectInt(0, 0, _widthRange, _widthRange)
             };
 
-            _halls = new List<RectInt>();
             var root = _bspTree.CreateNode(null, rootData, "Root");
             _bspTree.SetRoot(root);
             root = Split(_splitQuantity, root);
@@ -60,15 +59,15 @@ namespace BSP.Assets.Code.Dungeon
         {
             foreach (var leafParent in leafParents)
             {
-               CreateHall(ref _halls, leafParent.Left.Data.Room, leafParent.Right.Data.Room, leafParent.Data.SplitDirection);
+               CreateHall(leafParent.Left.Data , leafParent.Right.Data, leafParent.Data.SplitDirection);
                 yield return new WaitForSeconds(_debugStepTimeInSeconds);
             }
 
             var leafParentList = leafParents.ToList();
-            //UnityEngine.Debug.LogError("last hall");
+            ////UnityEngine.Debug.LogError("last hall");
             //for (int i = 0; i < leafParentList.Count - 1; i += 2)
             //{
-            //    CreateHall(ref _halls, leafParentList[i].Data.Container, leafParentList[i + 1].Data.Container);
+            //    CreateHall(ref _halls, leafParentList[i].Data.Container, leafParentList[i + 1].Data.Container, );
             //    yield return new WaitForSeconds(1);
             //}
         }
@@ -190,10 +189,24 @@ namespace BSP.Assets.Code.Dungeon
             return new RectInt(x, y, width, height);
         }
 
-        public void CreateHall(ref List<RectInt> halls, RectInt leftRegion, RectInt rightRegion, SplitDirection splitDirection)
+        public void CreateHall(SpaceParticionData leftNode, SpaceParticionData rightNode, SplitDirection splitDirection)
         {
             //desenhar q fica mais facil
             var halfHallSize = _hallSize / 2;
+            /*
+            Esclher um room ou hall para iniciar
+            Verificar se tem algo na direção do outro nodo
+                se sim
+                    Cria
+                Se nao
+                    escolhe area aleaotia do outro nodo e faz o algoritmo da parede para gerar a curva
+
+            */
+
+
+            var leftRegion = leftNode.Room;
+            var rightRegion = rightNode.Room;
+            var hall = new Hall();
             if (splitDirection == SplitDirection.Horizontal)
             {
                 Debug.Log("Horizontal");
@@ -205,21 +218,21 @@ namespace BSP.Assets.Code.Dungeon
                     {
                         Debug.Log("XMin");
 
-                        halls.Add(new RectInt(rnd, leftRegion.yMax, _hallSize, Math.Abs(opositeRnd - leftRegion.yMax)));
-                        halls.Add(new RectInt(rightRegion.xMin, opositeRnd, -Math.Abs(rnd - rightRegion.xMin), _hallSize));
+                        hall.Add(new RectInt(rnd, leftRegion.yMax, _hallSize, Math.Abs(opositeRnd - leftRegion.yMax)));
+                        hall.Add(new RectInt(rightRegion.xMin, opositeRnd, -Math.Abs(rnd - rightRegion.xMin), _hallSize));
                     }
                     else
                     {
                         Debug.Log("XMax");
-                        halls.Add(new RectInt(rnd, leftRegion.yMax, _hallSize, Math.Abs(opositeRnd - leftRegion.yMax)));
-                        halls.Add(new RectInt(rightRegion.xMax, opositeRnd, Math.Abs(rnd - rightRegion.xMax) + _hallSize, _hallSize));
+                        hall.Add(new RectInt(rnd, leftRegion.yMax, _hallSize, Math.Abs(opositeRnd - leftRegion.yMax)));
+                        hall.Add(new RectInt(rightRegion.xMax, opositeRnd, Math.Abs(rnd - rightRegion.xMax) + _hallSize, _hallSize));
                     }
                 }
                 else
                 {
                     Debug.Log("Reto");
                     var h = Math.Abs(rightRegion.yMin - leftRegion.yMax);
-                    halls.Add(new RectInt(rnd, leftRegion.yMax, _hallSize, h));
+                    hall.Add(new RectInt(rnd, leftRegion.yMax, _hallSize, h));
                 }
             }
             else
@@ -232,34 +245,45 @@ namespace BSP.Assets.Code.Dungeon
                     if (rnd < rightRegion.yMin)
                     {
                         Debug.Log("yMin");
-                        halls.Add(new RectInt(leftRegion.xMax, rnd, Math.Abs(opositeRnd - leftRegion.xMax), _hallSize));
-                        halls.Add(new RectInt(opositeRnd, rnd, _hallSize, Math.Abs(rnd - rightRegion.yMin)));
+                        hall.Add(new RectInt(leftRegion.xMax, rnd, Math.Abs(opositeRnd - leftRegion.xMax), _hallSize));
+                        hall.Add(new RectInt(opositeRnd, rnd, _hallSize, Math.Abs(rnd - rightRegion.yMin)));
                     }
                     else
                     {
                         Debug.Log("yMax");
-                        halls.Add(new RectInt(leftRegion.xMax, rnd, Math.Abs(opositeRnd - leftRegion.xMax), _hallSize));
-                        halls.Add(new RectInt(opositeRnd, rnd, _hallSize, -Math.Abs(rnd - rightRegion.yMax)));
+                        hall.Add(new RectInt(leftRegion.xMax, rnd, Math.Abs(opositeRnd - leftRegion.xMax), _hallSize));
+                        hall.Add(new RectInt(opositeRnd, rnd, _hallSize, -Math.Abs(rnd - rightRegion.yMax)));
                     }
                 }
                 else
                 {
                     Debug.Log("Reto");
                     var w = Math.Abs(rightRegion.xMin - leftRegion.xMax);
-                    halls.Add(new RectInt(leftRegion.xMax, rnd, w, _hallSize));
+                    hall.Add(new RectInt(leftRegion.xMax, rnd, w, _hallSize));
                 }
             }
+
+            leftNode.Hall = hall;
+            rightNode.Hall = hall;
         }
 
         private void DebugDrawBspTree(INode<SpaceParticionData> node){
             var nodeContainter = node.Data.Container;
             var nodeRoom = node.Data.Room;
+            var nodeHall = node.Data.Hall;
             Gizmos.color = Color.green;
 
             DrawRectInt(nodeContainter);
             DrawRoom(nodeRoom);
+            if(nodeHall != null)
+            {
+                foreach (var hall in nodeHall.Halls)
+                {
+                    DrawHall(hall);
+                }
+            }
 
-            if(node.Left != null){
+            if (node.Left != null){
                 DebugDrawBspTree(node.Left);
             }
             if(node.Right != null){
@@ -293,14 +317,6 @@ namespace BSP.Assets.Code.Dungeon
 
                 DebugDrawBspTree(_bspTree.Root);
             }
-
-            if(_halls != null && _halls.Count > 0){
-                foreach (var hall in _halls)
-                {
-                    DrawHall(hall);
-                }
-            }
-
         }
 
 

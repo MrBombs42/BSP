@@ -740,7 +740,7 @@ MonoBehaviour:
   _minWidthRoomRation: 0.15
   _minHeightRoomRation: 0.15
   _hallSize: 3
-  _debugStepTimeInSeconds: 1
+  _debugStepTimeInSeconds: 0
 --- !u!4 &934343528
 Transform:
   m_ObjectHideFlags: 0

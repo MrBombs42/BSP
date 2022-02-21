@@ -1,3 +1,4 @@
+using Assets.Code.BSP.SpaceParticion;
 using System;
 using UnityEngine;
 
@@ -12,6 +13,7 @@ namespace BSP.Assets.Code.BSP.SpaceParticion
     public class SpaceParticionData{
         public RectInt Container;
         public RectInt Room;
+        public Hall Hall;
         public SplitDirection SplitDirection;
 
         public override bool Equals(object obj)
@@ -26,7 +28,8 @@ namespace BSP.Assets.Code.BSP.SpaceParticion
 
         public override string ToString()
         {
-            return $"Container: {Container}, Room: {Room}, SplitDirection: {SplitDirection}, Ratio {Container.width/Container.height}";
+
+            return $"Container: {Container}, Room: {Room}, SplitDirection: {SplitDirection}, Ratio {Container.width/Container.height}, has hall? {Hall != null}";
         }
     }
 
