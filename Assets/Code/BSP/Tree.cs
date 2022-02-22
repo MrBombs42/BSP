@@ -39,53 +39,18 @@ namespace BSP.Assets.Code.BSP
             GetLeafs(ref leafList, root.Right);
         }
 
-        public void GetLeafsParent(ref HashSet<INode<T>> leafParentList, INode<T> root){
-            if(root.Left == null && root.Right == null){
-                leafParentList.Add(root.Parent);
-                return;
-            }
-
-            GetLeafsParent(ref leafParentList, root.Left);
-            GetLeafsParent(ref leafParentList, root.Right);
-        }
-
         public void GetNodesAtLevel(ref HashSet<INode<T>> nodesList, INode<T> root, int level)
         {
-            int startLevel = level;
             if (level == 0)
             {
                 nodesList.Add(root);
                 return;
             }
 
-            UnityEngine.Debug.LogError("a" + level);
-            GetLeftNodeAtLevel(ref nodesList, root.Left, --level);
-            UnityEngine.Debug.LogError("b" + startLevel);
-            GetRightNodeAtLevel(ref nodesList, root.Right, --startLevel);
-        }
-
-        private void GetLeftNodeAtLevel(ref HashSet<INode<T>> nodesList, INode<T> root, int level)
-        {
-            if (level == 0)
-            {
-                nodesList.Add(root);
-                return;
-            }
-
-            UnityEngine.Debug.LogError(level);
-            GetLeftNodeAtLevel(ref nodesList, root.Left, --level);
-        }
-
-        private void GetRightNodeAtLevel(ref HashSet<INode<T>> nodesList, INode<T> root, int level)
-        {
-            if (level == 0)
-            {
-                nodesList.Add(root);
-                return;
-            }
-
-            UnityEngine.Debug.LogError(level);
-            GetRightNodeAtLevel(ref nodesList, root.Right, --level);
+            int startLevelLeft = level;
+            GetNodesAtLevel(ref nodesList, root.Left, --startLevelLeft);
+            int startLevelRight = level;
+            GetNodesAtLevel(ref nodesList, root.Right, --startLevelRight);
         }
 
         public int GetTreeSize(INode<T> root)

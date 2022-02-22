@@ -56,9 +56,7 @@ namespace BSP.Assets.Code.Dungeon
             }
 
             HashSet<INode<SpaceParticionData>> leafParents = new HashSet<INode<SpaceParticionData>>();
-            _bspTree.GetLeafsParent(ref leafParents, root);
-            //_bspTree.GetNodesAtLevel(ref leafParents, root, _splitQuantity - 1);need be fixed
-
+            _bspTree.GetNodesAtLevel(ref leafParents, root, _splitQuantity - 1);
             StartCoroutine(WaitAndGenerateHall(leafParents));
         }
 
@@ -72,14 +70,14 @@ namespace BSP.Assets.Code.Dungeon
 
             var leafParentList = leafParents.ToList();
             ////UnityEngine.Debug.LogError("last hall");
-            for (int i = 0; i < leafParentList.Count - 1; i += 2)
-            {
-                CreateContainerHall(leafParentList[i].Parent,
-                    leafParentList[i], leafParentList[i + 1],
-                    leafParentList[i].Parent.Data.SplitDirection,
-                    HallCreationHelper.Hall);
-                yield return new WaitForSeconds(1);
-            }
+            //for (int i = 0; i < leafParentList.Count - 1; i += 2)
+            //{
+            //    CreateContainerHall(leafParentList[i].Parent,
+            //        leafParentList[i], leafParentList[i + 1],
+            //        leafParentList[i].Parent.Data.SplitDirection,
+            //        HallCreationHelper.Hall);
+            //    yield return new WaitForSeconds(1);
+            //}
         }
 
         public void PrintLog(){
