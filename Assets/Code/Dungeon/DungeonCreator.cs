@@ -55,29 +55,39 @@ namespace BSP.Assets.Code.Dungeon
                 leaf.Data.Room = GenerateRoom(leaf.Data.Container, leaf.Parent.Data.SplitDirection);
             }
 
-            HashSet<INode<SpaceParticionData>> leafParents = new HashSet<INode<SpaceParticionData>>();
-            _bspTree.GetNodesAtLevel(ref leafParents, root, _splitQuantity - 1);
-            StartCoroutine(WaitAndGenerateHall(leafParents));
+
+
+            StartCoroutine(WaitAndGenerateHall(root));
         }
 
-        private IEnumerator WaitAndGenerateHall(HashSet<INode<SpaceParticionData>> leafParents)
+        private IEnumerator WaitAndGenerateHall(INode<SpaceParticionData> root)
         {
-            foreach (var leafParent in leafParents)
+            var treeSize = _bspTree.GetTreeSize(root);
+            int interation =  treeSize - 1;
+            HashSet<INode<SpaceParticionData>> leafParents;
+            while (interation > 0)
             {
-               CreateRoomHall(leafParent, leafParent.Left.Data , leafParent.Right.Data, leafParent.Data.SplitDirection);
-                yield return new WaitForSeconds(_debugStepTimeInSeconds);
-            }
+                leafParents = new HashSet<INode<SpaceParticionData>>();
+                _bspTree.GetNodesAtLevel(ref leafParents, root, interation);
+                if(interation == treeSize - 1)
+                {
+                    foreach (var leafParent in leafParents)
+                    {
+                        CreateRoomHall(leafParent, leafParent.Left.Data, leafParent.Right.Data, leafParent.Data.SplitDirection);
+                        yield return new WaitForSeconds(_debugStepTimeInSeconds);
+                    }
+                }
+                else
+                {
+                    foreach (var leafParent in leafParents)
+                    {
+                        CreateContainerHall(leafParent, leafParent.Left, leafParent.Right, leafParent.Data.SplitDirection, HallCreationHelper.Hall);
+                        yield return new WaitForSeconds(_debugStepTimeInSeconds);
+                    }
+                }
 
-            var leafParentList = leafParents.ToList();
-            ////UnityEngine.Debug.LogError("last hall");
-            //for (int i = 0; i < leafParentList.Count - 1; i += 2)
-            //{
-            //    CreateContainerHall(leafParentList[i].Parent,
-            //        leafParentList[i], leafParentList[i + 1],
-            //        leafParentList[i].Parent.Data.SplitDirection,
-            //        HallCreationHelper.Hall);
-            //    yield return new WaitForSeconds(1);
-            //}
+                interation--;
+            }
         }
 
         public void PrintLog(){
