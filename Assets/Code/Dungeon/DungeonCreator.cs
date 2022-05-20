@@ -65,7 +65,7 @@ namespace BSP.Assets.Code.Dungeon
             var treeSize = _bspTree.GetTreeSize(root);
             int interation =  treeSize - 1;
             HashSet<INode<SpaceParticionData>> leafParents;
-            while (interation > 0)
+            while (interation > -1)
             {
                 leafParents = new HashSet<INode<SpaceParticionData>>();
                 _bspTree.GetNodesAtLevel(ref leafParents, root, interation);
